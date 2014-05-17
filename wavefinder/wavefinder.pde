@@ -11,8 +11,10 @@ int DELTA = 10;
 float[][] kernel = {{-1, -1, -1},
                     {-1,  9, -1},
                     {-1, -1, -1}};
-int KERNEL_SIZE_X = (kernel[0].length - 1)/2;
-int KERNEL_SIZE_Y = (kernel.length -1)/2;
+
+float[][] blurkernel = {{ 1,  1,  1},
+                        { 1,  1,  1},
+                        { 1,  1,  1}};
 
 
 int rc2cell(int r, int c, PImage img) {
@@ -35,7 +37,7 @@ int findMinPath(int[][] dp, PImage img, int row, int col) {
   if (dp[row][col] != -1) return dp[row][col];
   
   int best = Integer.MAX_VALUE;
-  int valueHere = int(red(img.pixels[row * img.width + col]));
+  int valueHere = int(brightness(img.pixels[row * img.width + col]));
   
   for (int d = -DELTA; d <= DELTA; ++d) {
     best = min(best, d*d + findMinPath(dp, img, row+d, col+1));
@@ -45,39 +47,98 @@ int findMinPath(int[][] dp, PImage img, int row, int col) {
   return valueHere + best;
 }
 
-void draw() {
+PImage applyKernel(PImage input, float[][] kernel) {
+  int KERNEL_SIZE_X = (kernel[0].length - 1)/2;
+  int KERNEL_SIZE_Y = (kernel.length -1)/2;
   
-  if (!video.available())
-    return;
-  
-  video.read();
-  image(video, 0, 0, width, height); // Draw the webcam video onto the screen
-  video.loadPixels();
-  // Create an opaque image of the same size as the original
-  PImage edgeImg = createImage(video.width, video.height, RGB);
+  PImage newImage = createImage(input.width, input.height, RGB);
+  newImage.loadPixels();
+  input.loadPixels();
   // Loop through every pixel in the image.
-  for (int y = KERNEL_SIZE_Y; y < video.height-KERNEL_SIZE_Y; y++) { // Skip top and bottom edges
-    for (int x = KERNEL_SIZE_X; x < video.width-KERNEL_SIZE_X; x++) { // Skip left and right edges
+  for (int y = KERNEL_SIZE_Y; y < input.height-KERNEL_SIZE_Y; y++) { // Skip top and bottom edges
+    for (int x = KERNEL_SIZE_X; x < input.width-KERNEL_SIZE_X; x++) { // Skip left and right edges
+      float[] sum = new float[3]; // Kernel sum for this pixel
+      for (int ky = -KERNEL_SIZE_Y; ky <= KERNEL_SIZE_Y; ky++) {
+        for (int kx = -KERNEL_SIZE_X; kx <= KERNEL_SIZE_X; kx++) {
+          // Calculate the adjacent pixel for this kernel point
+          int pos = (y + ky)*input.width + (x+kx);
+          // Image is not grayscale, red/green/blue may not be identical
+          sum[0] += kernel[ky+KERNEL_SIZE_Y][kx+KERNEL_SIZE_X] * red(input.pixels[pos]);
+          sum[1] += kernel[ky+KERNEL_SIZE_Y][kx+KERNEL_SIZE_X] * green(input.pixels[pos]);
+          sum[2] += kernel[ky+KERNEL_SIZE_Y][kx+KERNEL_SIZE_X] * blue(input.pixels[pos]);
+          
+//          // Multiply adjacent pixels based on the kernel values
+//          sum += val;
+        }
+      }
+      // For this pixel in the new image, set the gray value
+      // based on the sum from the kernel
+      int ksize = (KERNEL_SIZE_Y*2+1)*(KERNEL_SIZE_X*2+1);
+      newImage.pixels[y*video.width + x] = color(sum[0]/ksize, sum[1]/ksize, sum[2]/ksize);
+    }
+  }
+  
+  newImage.updatePixels();
+  return newImage;
+}
+
+PImage applyKernel2(PImage input, float[][] kernel) {
+  int KERNEL_SIZE_X = (kernel[0].length - 1)/2;
+  int KERNEL_SIZE_Y = (kernel.length -1)/2;
+  
+  PImage newImage = createImage(input.width, input.height, RGB);
+  newImage.loadPixels();
+  input.loadPixels();
+  // Loop through every pixel in the image.
+  for (int y = KERNEL_SIZE_Y; y < input.height-KERNEL_SIZE_Y; y++) { // Skip top and bottom edges
+    for (int x = KERNEL_SIZE_X; x < input.width-KERNEL_SIZE_X; x++) { // Skip left and right edges
       float sum = 0; // Kernel sum for this pixel
       for (int ky = -KERNEL_SIZE_Y; ky <= KERNEL_SIZE_Y; ky++) {
         for (int kx = -KERNEL_SIZE_X; kx <= KERNEL_SIZE_X; kx++) {
           // Calculate the adjacent pixel for this kernel point
-          int pos = (y + ky)*video.width + (x+kx);
+          int pos = (y + ky)*input.width + (x+kx);
           // Image is not grayscale, red/green/blue may not be identical
-          float val = red(video.pixels[pos]) * green(video.pixels[pos]) * blue(video.pixels[pos]);
+          float val = red(input.pixels[pos]) * green(input.pixels[pos]) * blue(input.pixels[pos]);
+          
           // Multiply adjacent pixels based on the kernel values
           sum += kernel[ky+KERNEL_SIZE_Y][kx+KERNEL_SIZE_X] * val;
         }
       }
       // For this pixel in the new image, set the gray value
       // based on the sum from the kernel
-      edgeImg.pixels[y*video.width + x] = color(sum);
+      newImage.pixels[y*video.width + x] = color(sum);
     }
   }
-  // State that there are changes to edgeImg.pixels[]
-  edgeImg.updatePixels();
   
-  image(edgeImg, 0, 0); 
+  newImage.updatePixels();
+  return newImage;
+}
+
+void treshold(PImage image, int t) {
+  image.loadPixels();
+  for (int i=0; i<image.pixels.length; i++) {
+    image.pixels[i] = color(brightness(image.pixels[i]));
+  }
+  
+  image.updatePixels();
+}
+
+void draw() {
+  
+  if (!video.available())
+    return;
+  
+  video.read();
+  
+//  image(video, 0, 0, width/2, height);
+  PImage blurred = applyKernel(video, blurkernel);
+//  image(blurred, width/2, 0, width/2, height);
+  
+  // Create an opaque image of the same size as the original
+  PImage edgeImg = applyKernel2(blurred, kernel);
+  treshold(edgeImg, 127);
+  
+  image(edgeImg, 0, 0);
   
   int[][] dp = new int[edgeImg.height][edgeImg.width];
 
@@ -113,7 +174,7 @@ void draw() {
     int matchingRow = -1;
     for (int d = -DELTA; d <= DELTA; ++d) {
       if (currentRow + d >= 0 && currentRow + d < edgeImg.height && 
-            dp[currentRow][i] == d*d + ((int)red(edgeImg.pixels[currentCell])) + dp[currentRow+d][i+1]) {
+            dp[currentRow][i] == d*d + ((int)brightness(edgeImg.pixels[currentCell])) + dp[currentRow+d][i+1]) {
         matchingRow = currentRow + d;
         break;
       }
