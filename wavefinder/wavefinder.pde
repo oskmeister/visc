@@ -3,6 +3,7 @@
 /* @pjs preload="moon.jpg"; */
 
 import processing.video.*;
+import java.io.FileOutputStream;
 
 Capture video;
 
@@ -16,6 +17,8 @@ float[][] blurkernel = {{ 1,  1,  1},
                         { 1,  1,  1},
                         { 1,  1,  1}};
 
+
+long lastWrite = 0;
 
 int rc2cell(int r, int c, PImage img) {
    return img.width * r + c; 
@@ -168,6 +171,8 @@ void draw() {
   stroke(0, 0, 255);
   strokeWeight(4);
   
+  byte[] result = new byte[edgeImg.width];
+  
   for (int i = 0; i < edgeImg.width-1; ++i) {
     int currentCell = rc2cell(currentRow, i, video);
       
@@ -184,9 +189,21 @@ void draw() {
       return; 
     }
     currentRow = matchingRow;
-    System.out.println("row " + currentRow);
     point(i, currentRow);
+    result[i] = (byte)map(currentRow, 0, edgeImg.height, 0, 256);
   }
  
+  
+  try {
+    if (millis() - 1000 > lastWrite) {
+      FileOutputStream out = new FileOutputStream("~/output");
+      out.write(result);
+      out.close();
+      lastWrite = millis();
+    }
+  } catch (Throwable e) {
+    e.printStackTrace();
+  }
+
 }
 
