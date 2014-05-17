@@ -1,3 +1,6 @@
+import oscP5.*;
+import netP5.*;
+
 
 // The next line is needed if running in JavaScript Mode with Processing.js
 /* @pjs preload="moon.jpg"; */
@@ -20,6 +23,10 @@ float[][] blurkernel = {{ 1,  1,  1},
 
 long lastWrite = 0;
 
+OscP5 oscP5;
+/* a NetAddress contains the ip address and port number of a remote location in the network. */
+NetAddress myBroadcastLocation;
+
 int rc2cell(int r, int c, PImage img) {
    return img.width * r + c; 
 }
@@ -28,6 +35,14 @@ void setup() {
   //img = loadImage("/Users/osk/fun/midihack/skyline.jpg");// Load the original image
   size(640, 480);
   //noLoop();
+  
+  /* create a new instance of oscP5. 
+   * 12000 is the port number you are listening for incoming osc messages.
+   */
+  oscP5 = new OscP5(this,12000);
+  /* the address of the osc broadcast server */
+  myBroadcastLocation = new NetAddress("127.0.0.1", 5439);
+  
   // Uses the default video input, see the reference if this causes an error
   video = new Capture(this, width, height);
   video.start();  
@@ -195,11 +210,19 @@ void draw() {
  
   
   try {
-    if (millis() - 1000 > lastWrite) {
-      FileOutputStream out = new FileOutputStream("~/output");
-      out.write(result);
-      out.close();
+    if (millis() - 250 > lastWrite) {
       lastWrite = millis();
+      
+      /* create a new OscMessage with an address pattern, in this case /test. */
+      OscMessage myOscMessage = new OscMessage("/buff");
+      
+      myOscMessage.add(result);
+      
+      /* send the OscMessage to a remote location specified in myNetAddress */
+      oscP5.send(myOscMessage, myBroadcastLocation);
+//      FileOutputStream out = new FileOutputStream("/Users/rouzbeh/code/visc/output");
+//      out.write(result);
+//      out.close();
     }
   } catch (Throwable e) {
     e.printStackTrace();
