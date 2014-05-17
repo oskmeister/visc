@@ -1,4 +1,3 @@
 # visc
 
-### members
-rouz
+`[rouz, osk, owen, jesper]`
