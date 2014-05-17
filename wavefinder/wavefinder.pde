@@ -21,6 +21,8 @@ float[][] blurkernel = {{ 1,  1,  1},
                         { 1,  1,  1}};
 
 
+int prevResult[];
+
 long lastWrite = 0;
 
 OscP5 oscP5;
@@ -46,6 +48,8 @@ void setup() {
   // Uses the default video input, see the reference if this causes an error
   video = new Capture(this, width, height);
   video.start();  
+    
+  prevResult = new int[video.width];
 }
 
 int findMinPath(int[][] dp, PImage img, int row, int col) {
@@ -204,13 +208,15 @@ void draw() {
       return; 
     }
     currentRow = matchingRow;
-    point(i, currentRow);
-    result[i] = (byte)map(currentRow, 0, edgeImg.height, 0, 256);
+    
+    int rowBetween = int(prevResult[i] + (currentRow - prevResult[i]) / 4.0);
+    point(i, rowBetween);
+    result[i] = (byte)map(rowBetween, 0, edgeImg.height, 0, 256);
+    prevResult[i] = rowBetween;
   }
- 
   
   try {
-    if (millis() - 250 > lastWrite) {
+//    if (millis() - 250 > lastWrite) {
       lastWrite = millis();
       
       /* create a new OscMessage with an address pattern, in this case /test. */
@@ -220,10 +226,7 @@ void draw() {
       
       /* send the OscMessage to a remote location specified in myNetAddress */
       oscP5.send(myOscMessage, myBroadcastLocation);
-//      FileOutputStream out = new FileOutputStream("/Users/rouzbeh/code/visc/output");
-//      out.write(result);
-//      out.close();
-    }
+//    }
   } catch (Throwable e) {
     e.printStackTrace();
   }
