@@ -6,7 +6,7 @@ import processing.video.*;
 
 Capture video;
 
-int DELTA = 10;
+int DELTA = 30;
 
 float[][] kernel = {{ -1, -1, -1}, 
                     { -1,  9, -1}, 
@@ -36,7 +36,7 @@ int findMinPath(int[][] dp, PImage img, int row, int col) {
   int valueHere = int(red(img.pixels[row * img.width + col]));
   
   for (int d = -DELTA; d <= DELTA; ++d) {
-    best = min(best, findMinPath(dp, img, row+d, col+1));
+    best = min(best, d*d + findMinPath(dp, img, row+d, col+1));
   }
   
   dp[row][col] = valueHere + best;
@@ -53,7 +53,7 @@ void draw() {
   video.loadPixels();
   // Create an opaque image of the same size as the original
   PImage edgeImg = createImage(video.width, video.height, RGB);
-  // Loop through every pixel in the image.
+  // Loop through every pixel in the image.  
   for (int y = 1; y < video.height-1; y++) { // Skip top and bottom edges
     for (int x = 1; x < video.width-1; x++) { // Skip left and right edges
       float sum = 0; // Kernel sum for this pixel
@@ -111,7 +111,7 @@ void draw() {
     int matchingRow = -1;
     for (int d = -DELTA; d <= DELTA; ++d) {
       if (currentRow + d >= 0 && currentRow + d < edgeImg.height && 
-            dp[currentRow][i] == ((int)red(edgeImg.pixels[currentCell])) + dp[currentRow+d][i+1]) {
+            dp[currentRow][i] == d*d + ((int)red(edgeImg.pixels[currentCell])) + dp[currentRow+d][i+1]) {
         matchingRow = currentRow + d;
         break;
       }
