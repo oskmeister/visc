@@ -1,0 +1,11 @@
+{
+    "name": "viscWebServer",
+    "version": "0.0.1",
+    "description": "for fetching images",
+    "main": "app.js",
+    "author": "visc",
+    "license": "Midi hack",
+    "dependencies": {
+        "express": "3.x"
+    }
+}
