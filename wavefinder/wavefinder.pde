@@ -43,7 +43,7 @@ void setup() {
    */
   oscP5 = new OscP5(this,12000);
   /* the address of the osc broadcast server */
-  myBroadcastLocation = new NetAddress("127.0.0.1", 5439);
+  myBroadcastLocation = new NetAddress("127.0.0.1", 5400);
   
   // Uses the default video input, see the reference if this causes an error
   video = new Capture(this, width, height);
