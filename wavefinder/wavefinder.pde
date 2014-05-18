@@ -10,10 +10,10 @@ import java.io.FileOutputStream;
 
 Capture video;
 
-int DELTA = 10;
+int DELTA = 5;
 
 float[][] kernel = {{-1, -1, -1},
-                    {-1,  9, -1},
+                    {-1, 9, -1},
                     {-1, -1, -1}};
 
 float[][] blurkernel = {{ 1,  1,  1},
@@ -214,6 +214,10 @@ void draw() {
     result[i] = (byte)map(rowBetween, 0, edgeImg.height, 0, 256);
     prevResult[i] = rowBetween;
   }
+  
+  stroke(0, 255, 0);
+  line(0, height/2, 40, height/2);
+  line(width, height/2, width-40, height/2);
   
   try {
 //    if (millis() - 250 > lastWrite) {
