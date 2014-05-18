@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 Capture video;
 
 int DELTA = 5;
+int paused = 0;
 
 float[][] kernel = {{-1, -1, -1},
                     {-1, 9, -1},
@@ -28,6 +29,14 @@ long lastWrite = 0;
 OscP5 oscP5;
 /* a NetAddress contains the ip address and port number of a remote location in the network. */
 NetAddress myBroadcastLocation;
+
+void mousePressed() {
+  if (paused == 0) {
+    paused = 1;
+  } else {
+    paused = 0;
+  }
+}
 
 int rc2cell(int r, int c, PImage img) {
    return img.width * r + c; 
@@ -150,7 +159,8 @@ void draw() {
   if (!video.available())
     return;
   
-  video.read();
+  if (paused == 0)
+    video.read();
   
 //  image(video, 0, 0, width/2, height);
   PImage blurred = applyKernel(video, blurkernel);
