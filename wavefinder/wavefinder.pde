@@ -224,6 +224,7 @@ void draw() {
     result[i] = (byte)map(rowBetween, 0, edgeImg.height, 0, 256);
     prevResult[i] = rowBetween;
   }
+  result[result.length-1] = result[result.length-2];
   
   stroke(0, 255, 0);
   line(0, height/2, 40, height/2);
